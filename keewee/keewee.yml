@@ -1,0 +1,36 @@
+version: '3.9'
+
+services:
+  keewee:
+    image: hacdias/webdav:v4.0.0
+    command: --config /webdav.yml
+    volumes:
+      - dav-share:/share
+    networks:
+      - traefik-public
+    deploy:
+      placement:
+        constraints:
+          - node.labels.webdav.data == true
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=traefik-public
+        - traefik.constraint-label=traefik-public
+        - traefik.http.routers.webdav-https.rule=Host(`${DOMAIN?Variable not set}`)
+        - traefik.http.routers.webdav-https.entrypoints=https
+        - traefik.http.routers.webdav-https.tls=true
+        - traefik.http.routers.webdav-https.tls.certresolver=le
+        - traefik.http.services.webdav.loadbalancer.server.port=80
+    configs:
+      - webdav.yml
+
+configs:
+  webdav.yml:
+    file: ./webdav.yml
+
+volumes:
+  dav-share:
+
+networks:
+  traefik-public:
+    external: true

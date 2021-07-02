@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  updater:
+    image: ghcr.io/cyberplanning/updater:master
+    environment:
+      - "PYTHONUNBUFFERED=1"
+    configs:
+      - source: cyberplanning-params.json
+        target: /usr/src/app/params.json
+        mode: 0440
+    depends_on:
+      - mongo
+    networks:
+      - internal
+    deploy:
+      placement:
+        constraints:
+          - node.platform.os == linux
+
+  apiserver:
+    image: ghcr.io/cyberplanning/apiserver:master
+    configs:
+      - source: cyberplanning-prod.cfg
+        target: /usr/src/app/cyberapi/prod.cfg
+        mode: 0440
+    depends_on:
+      - mongo
+    networks:
+      - internal
+      - traefik-public
+    environment:
+      - "CYBERPLANNING_SETTINGS=prod.cfg"
+      - "FLASK_DEBUG=False"
+    deploy:
+      placement:
+        constraints:
+          - node.platform.os == linux
+      labels:
+        - traefik.enable=true
+        - traefik.constraint-label=traefik-public
+        - traefik.docker.network=traefik-public
+        - traefik.http.routers.cyberplanning-2-https.entrypoints=https
+        - traefik.http.routers.cyberplanning-2-https.rule=Host(`${DOMAIN?Variable not set}`)&&PathPrefix(`/graphql`)
+        - traefik.http.routers.cyberplanning-2-https.tls=true
+        - traefik.http.routers.cyberplanning-2-https.tls.certresolver=le
+        - traefik.http.services.cyberplanning-2.loadbalancer.server.port=3001
+
+  webclient:
+    image: ghcr.io/cyberplanning/webclient:master
+    networks:
+      - traefik-public
+    deploy:
+      placement:
+        constraints:
+          - node.platform.os == linux
+      labels:
+        - traefik.enable=true
+        - traefik.constraint-label=traefik-public
+        - traefik.docker.network=traefik-public
+        - traefik.http.routers.cyberplanning-http.entrypoints=http
+        - traefik.http.routers.cyberplanning-http.middlewares=https-redirect
+        - traefik.http.routers.cyberplanning-http.rule=Host(`${DOMAIN?Variable not set}`)
+        - traefik.http.routers.cyberplanning-https.entrypoints=https
+        - traefik.http.routers.cyberplanning-https.rule=Host(`${DOMAIN?Variable not set}`)
+        - traefik.http.routers.cyberplanning-https.tls=true
+        - traefik.http.routers.cyberplanning-https.tls.certresolver=le
+        - traefik.http.services.cyberplanning.loadbalancer.server.port=80
+
+  mongo:
+    image: mongo:latest
+    volumes:
+      - db-files:/data/db
+    networks:
+      - internal
+
+configs:
+  cyberplanning-params.json:
+    external: true
+  cyberplanning-prod.cfg:
+    external: true
+
+volumes:
+  db-files:
+
+networks:
+  internal:
+
+  traefik-public:
+    external: true

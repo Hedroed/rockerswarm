@@ -1,0 +1,45 @@
+{
+    "updater": {
+        "frequency": 600,
+        "error_tolerance": 5
+    },
+    "database": {
+        "name": "planning",
+        "host": "mongo",
+        "port": 27017
+    },
+    "branches": [
+        {
+            "name": "cyber",
+            "parser": {
+                "mode": "ENT",
+                "teachers_patterns": ["^[A-Za-zàâäéèêëìîïòôöùûüÿ\\s\\.\\-]+$"],
+                "groups_patterns": ["^(Group|GROUP)[1-6]([ -](SUB|Sub|sub)[1234])?$"],
+                "blacklist": ["\\n"],
+                "delimiter": "\n"
+            },
+            "groups": [
+                {
+                    "name": "1",
+                    "addresses": ["https://example.com/icalprovidingflow?from=2018-04-01T00:00:00Z&to=2020-03-31T23:59:59Z"]
+                },
+                {
+                    "name": "2",
+                    "addresses": ["https://google.com/mygooglecal"]
+                }
+            ]
+        },
+        {
+            "name": "hack2g2",
+            "parser": {
+                "mode": "Hack2G2"
+            },
+            "groups": [
+                {
+                    "name": "42",
+                    "addresses": ["https://drive.hack2g2.fr/remote.php/dav/public-calendars/2H0SEVYL4SEWNHYC?export"]
+                }
+            ]
+        }
+    ]
+}

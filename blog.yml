@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  keewee:
+    image: registry.gitlab.com/hedroed/website:latest
+    networks:
+      - traefik-public
+    deploy:
+      placement:
+        constraints:
+          - node.platform.os == linux
+      labels:
+        - traefik.enable=true
+        - traefik.constraint-label=traefik-public
+        - traefik.docker.network=traefik-public
+        - traefik.http.routers.blog-http.entrypoints=http
+        - traefik.http.routers.blog-http.middlewares=https-redirect
+        - traefik.http.routers.blog-http.rule=Host(`${DOMAIN?Variable not set}`)
+        - traefik.http.routers.blog-https.entrypoints=https
+        - traefik.http.routers.blog-https.rule=Host(`${DOMAIN?Variable not set}`)
+        - traefik.http.routers.blog-https.tls=true
+        - traefik.http.routers.blog-https.tls.certresolver=le
+        - traefik.http.services.blog.loadbalancer.server.port=80
+
+networks:
+  traefik-public:
+    external: true
