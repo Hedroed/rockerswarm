@@ -1,0 +1,24 @@
+version: '3'
+
+services:
+  relay:
+    image: syncthing/relaysrv:1.18.0
+    entrypoint: ["/bin/entrypoint.sh", "/bin/strelaysrv", "-ext-address", "51.159.52.215:22067", "-provided-by", "<s>https://rickrolled.fr/</s>"]
+    networks:
+      - traefik-public
+    volumes:
+      - things:/var/strelaysrv
+    ports:
+      - 22067:22067
+      - 22070:22070
+    deploy:
+      placement:
+        constraints:
+          - node.platform.os == linux
+
+volumes:
+  things:
+
+networks:
+  traefik-public:
+    external: true
