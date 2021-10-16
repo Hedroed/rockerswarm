@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  cloner:
+    volumes:
+        - website_data:/git
+    image: alpine/git:latest
+    secrets:
+      - source: wiki-git-askpass
+        target: /run/secrets/askpass.sh
+        mode: 0755
+    environment:
+      GIT_ASKPASS: "/run/secrets/askpass.sh"
+    entrypoint: ["/bin/sh", "-c" , "git init && git pull https://Hedroed@github.com/Hedroed/wiki.git gh-pages"]
+    deploy:
+      restart_policy:
+        condition: none
+
+  web:
+    volumes:
+        - website_data:/usr/share/nginx/html:ro
+    image: nginx:latest
+    networks:
+      - traefik-public
+    depends_on:
+      - cloner
+    deploy:
+      placement:
+        constraints:
+          - node.platform.os == linux
+      labels:
+        - traefik.enable=true
+        - traefik.constraint-label=traefik-public
+        - traefik.docker.network=traefik-public
+        - traefik.http.middlewares.wiki-auth.basicauth.users=${USERNAME?Variable not set}:${HASHED_PASSWORD?Variable not set}
+        - traefik.http.routers.wiki-http.entrypoints=http
+        - traefik.http.routers.wiki-http.middlewares=https-redirect
+        - traefik.http.routers.wiki-http.rule=Host(`${DOMAIN?Variable not set}`)
+        - traefik.http.routers.wiki-https.entrypoints=https
+        - traefik.http.routers.wiki-https.rule=Host(`${DOMAIN?Variable not set}`)
+        - traefik.http.routers.wiki-https.tls=true
+        - traefik.http.routers.wiki-https.tls.certresolver=le
+        - traefik.http.routers.wiki-https.middlewares=wiki-auth
+        - traefik.http.services.wiki.loadbalancer.server.port=80
+
+secrets:
+  wiki-git-askpass:
+    external: true
+
+volumes:
+  website_data:
+  
+networks:
+  traefik-public:
+    external: true
