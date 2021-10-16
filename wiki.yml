@@ -11,7 +11,7 @@ services:
         mode: 0755
     environment:
       GIT_ASKPASS: "/run/secrets/askpass.sh"
-    entrypoint: ["/bin/sh", "-c" , "git init && git pull https://Hedroed@github.com/Hedroed/wiki.git gh-pages"]
+    entrypoint: ["/bin/sh", "-c" , "git init && git fetch https://Hedroed@github.com/Hedroed/wiki.git gh-pages && git reset --hard FETCH_HEAD"]
     deploy:
       restart_policy:
         condition: none
@@ -32,7 +32,7 @@ services:
         - traefik.enable=true
         - traefik.constraint-label=traefik-public
         - traefik.docker.network=traefik-public
-        - traefik.http.middlewares.wiki-auth.basicauth.users=${USERNAME?Variable not set}:${HASHED_PASSWORD?Variable not set}
+        - traefik.http.middlewares.wiki-auth.basicauth.users=wiki:$$apr1$$4HuNFku3$$xvAWblZIaZzWVIfBrA9eU1
         - traefik.http.routers.wiki-http.entrypoints=http
         - traefik.http.routers.wiki-http.middlewares=https-redirect
         - traefik.http.routers.wiki-http.rule=Host(`${DOMAIN?Variable not set}`)
