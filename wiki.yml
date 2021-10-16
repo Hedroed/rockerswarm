@@ -32,7 +32,7 @@ services:
         - traefik.enable=true
         - traefik.constraint-label=traefik-public
         - traefik.docker.network=traefik-public
-        - traefik.http.middlewares.wiki-auth.basicauth.users=wiki:$$apr1$$4HuNFku3$$xvAWblZIaZzWVIfBrA9eU1
+        - traefik.http.middlewares.wiki-auth.basicauth.users=${USERNAME?Variable not set}:${HASHED_PASSWORD?Variable not set}
         - traefik.http.routers.wiki-http.entrypoints=http
         - traefik.http.routers.wiki-http.middlewares=https-redirect
         - traefik.http.routers.wiki-http.rule=Host(`${DOMAIN?Variable not set}`)
