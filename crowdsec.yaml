@@ -1,0 +1,85 @@
+version: "3.8"
+
+services:
+  # logspout:
+  #   image: gliderlabs/logspout:latest
+  #   networks:
+  #     - logging
+  #   volumes:
+  #     - /etc/hostname:/etc/host_hostname:ro
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #   command:
+  #     syslog://crowdsec:514
+  #   deploy:
+  #     mode: global
+  #     resources:
+  #       limits:
+  #         cpus: '0.20'
+  #         memory: 256M
+  #       reservations:
+  #         cpus: '0.10'
+  #         memory: 128M
+
+  crowdsec:
+    volumes:
+      - '/var/log/auth.log:/var/log/auth.log'
+      - '/var/log/syslog:/var/log/syslog'
+      - crowdsec-data:/var/lib/crowdsec/data/
+      - crowdsec-config:/etc/crowdsec/
+    configs:
+      - source: crowdsec-acquis.yml
+        target: /etc/crowdsec/acquis.yaml
+        mode: 0440
+    ports:
+      - mode: host
+        target: 8080
+        published: 8080
+      - mode: host
+        target: 6060
+        published: 6060
+    networks:
+      - logging
+    environment:
+      COLLECTIONS: "crowdsecurity/sshd crowdsecurity/nginx"
+    image: crowdsecurity/crowdsec
+    #entrypoint: "tail -f /dev/null"
+
+  metabase:
+    image: metabase/metabase
+    environment:
+      MB_DB_FILE: /metabase-data/metabase.db
+      MGID: "${GID-1000}"
+    volumes:
+      - crowdsec-data:/metabase-data/
+    networks:
+      - traefik-public
+    deploy:
+      placement:
+        constraints:
+          - node.labels.crowdsec.metabase == true
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=traefik-public
+        - traefik.constraint-label=traefik-public
+        - traefik.http.middlewares.crowdsec-auth.basicauth.users=${USERNAME?Variable not set}:${HASHED_PASSWORD?Variable not set}
+        - traefik.http.routers.metabase-https.rule=Host(`${DOMAIN?Variable not set}`)
+        - traefik.http.routers.metabase-https.entrypoints=https
+        - traefik.http.routers.metabase-https.tls=true
+        - traefik.http.routers.metabase-https.tls.certresolver=le
+        - traefik.http.routers.metabase-https.middlewares=crowdsec-auth
+        - traefik.http.services.metabase.loadbalancer.server.port=3000
+
+volumes:
+  crowdsec-data:
+  
+  crowdsec-config:
+
+networks:
+  traefik-public:
+    external: true
+
+  logging:
+
+configs:
+  crowdsec-acquis.yml:
+    external: true
