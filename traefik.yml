@@ -10,6 +10,10 @@ services:
       - 80:80
       # Listen on port 443, default for HTTPS
       - 443:443
+    logging:
+      driver: syslog
+      options:
+        tag: "traefik/{{.ID}}"
     deploy:
       placement:
         constraints:
