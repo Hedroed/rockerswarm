@@ -3,7 +3,7 @@ services:
   updater:
     image: 'registry.gitlab.com/hedroed/bidule-workzone:updater'
     environment:
-      - DB_PATH=mysql+pymysql://root:5j2R03lurJHs@db/edmm
+      - DB_PATH=mysql+pymysql://root:${DB_PASSWORD?Variable not set}@db/edmm
     networks:
       - edmm
     depends_on:
@@ -16,7 +16,7 @@ services:
   server:
     image: 'registry.gitlab.com/hedroed/bidule-workzone/server'
     environment:
-      - DB_PATH=mysql+pymysql://root:5j2R03lurJHs@db/edmm
+      - DB_PATH=mysql+pymysql://root:${DB_PASSWORD?Variable not set}@db/edmm
     networks:
       - edmm
       - traefik-public
@@ -58,7 +58,7 @@ services:
   db:
     image: mariadb
     environment:
-      MARIADB_ROOT_PASSWORD: '5j2R03lurJHs'
+      MARIADB_ROOT_PASSWORD: '${DB_PASSWORD?Variable not set}'
       MARIADB_DATABASE: edmm
     networks:
       - edmm
