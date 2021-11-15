@@ -1,0 +1,16 @@
+version: '3.9'
+
+services:
+    wiki:
+        image: 'requarks/wiki:2'
+        ports:
+            - '3000:3000'
+        environment:
+            - DB_TYPE=sqlite
+            - DB_FILEPATH=/wiki/data/wiki.db
+        volumes:
+            - db-data:/wiki/data/
+        restart: always
+
+volumes:
+    db-data:
