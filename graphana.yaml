@@ -1,0 +1,32 @@
+version: '3.8'
+services:
+  graphana:
+    image: 'grafana/grafana-oss:main'
+    networks:
+      - traefik-public
+      - edmm_edmm
+    volumes:
+      - data:/var/lib/grafana
+    deploy:
+      placement:
+        constraints:
+          - node.platform.os == linux
+      labels:
+        - traefik.enable=true
+        - traefik.constraint-label=traefik-public
+        - traefik.docker.network=traefik-public
+        - traefik.http.routers.graphana-https.entrypoints=https
+        - traefik.http.routers.graphana-https.rule=Host(`${DOMAIN?Variable not set}`)
+        - traefik.http.routers.graphana-https.tls=true
+        - traefik.http.routers.graphana-https.tls.certresolver=le
+        - traefik.http.services.graphana.loadbalancer.server.port=3000
+    
+volumes:
+  data:
+
+networks:
+  edmm_edmm:
+    external: true
+
+  traefik-public:
+    external: true
