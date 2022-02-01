@@ -1,0 +1,41 @@
+version: '3'
+
+services:
+  backup-keewee:
+    image: debian:10
+    command: tar cvf /backup/keewee_backup.tar /share
+    volumes:
+      - backup:/backup
+      - keewee_dav-share:/share:ro
+    deploy:
+      restart_policy:
+        condition: none
+      placement:
+        constraints:
+          - node.platform.os == linux
+          - node.labels.webdav.data == true
+
+  backup-edmm:
+    image: mariadb
+    command: mkdir -p /backup/edmm && mariabackup --backup --target-dir=/backup/edmm --user=root --password=${EDMM_PASSWORD} && tar cfz /backup/edmm.tgz /backup/edmm
+    networks:
+      - edmm_edmm
+    volumes:
+      - backup:/backup
+    deploy:
+      restart_policy:
+        condition: none
+      placement:
+        constraints:
+          - node.platform.os == linux
+
+
+networks:
+  edmm_edmm:
+    external: true
+
+volumes:
+  backup:
+    
+  keewee_dav-share:
+    external: true
