@@ -17,11 +17,17 @@ services:
 
   backup-edmm:
     image: mariadb
-    command: mkdir -p /backup/edmm && mariabackup --backup --target-dir=/backup/edmm --user=root --password=${EDMM_PASSWORD} && tar cfz /backup/edmm.tgz /backup/edmm
+    command: bash -c "
+      mkdir -p /backup/edmm &&
+      mariabackup --backup --compress --target-dir=/backup/edmm --host=db --user=root --password=${EDMM_PASSWORD} &&
+      tar cfvz /backup/edmm_backup.tgz /backup/edmm &&
+      rm -rf /backup/edmm
+      "
     networks:
       - edmm_edmm
     volumes:
       - backup:/backup
+      - edmm_dbdata:/var/lib/mysql:ro
     deploy:
       restart_policy:
         condition: none
@@ -38,4 +44,7 @@ volumes:
   backup:
     
   keewee_dav-share:
+    external: true
+    
+  edmm_dbdata:
     external: true
