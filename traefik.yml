@@ -7,9 +7,17 @@ services:
     image: traefik:v3.1
     ports:
       # Listen on port 80, default for HTTP, necessary to redirect to HTTPS
-      - 80:80
+      - target: 80
+        published: 80
+        mode: host
       # Listen on port 443, default for HTTPS
-      - 443:443
+      - target: 443
+        published: 443
+        mode: host
+    logging:
+      driver: syslog
+      options:
+        tag: "traefik/{{.ID}}"
     deploy:
       placement:
         constraints:
