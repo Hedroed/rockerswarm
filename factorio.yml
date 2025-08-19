@@ -1,0 +1,25 @@
+version: '3'
+
+services:
+  factorio-server:
+    image: factoriotools/factorio:stable-2.0.43
+    volumes:
+      - data:/factorio
+    ports:
+      - 34197:34197/udp
+      - 27015:27015/tcp
+    networks:
+      - traefik-public
+    deploy:
+      restart_policy:
+        condition: none
+      placement:
+        constraints:
+          - node.platform.os == linux
+
+networks:
+  traefik-public:
+    external: true
+
+volumes:
+  data:
