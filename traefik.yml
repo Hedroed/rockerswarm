@@ -1,5 +1,3 @@
-version: '3.3'
-
 services:
 
   traefik:
@@ -14,6 +12,8 @@ services:
       - target: 443
         published: 443
         mode: host
+      # Only for debugging
+      #- 127.0.0.1:8080:8080
     logging:
       driver: syslog
       options:
@@ -24,40 +24,40 @@ services:
           # Make the traefik service run only on the node with this label
           # as the node with it has the volume for the certificates
           - node.labels.traefik-public.traefik-public-certificates == true
-      labels:
-        # Enable Traefik for this service, to make it available in the public network
-        - traefik.enable=true
-        # Use the traefik-public network (declared below)
-        - traefik.docker.network=traefik-public
-        # Use the custom label "traefik.constraint-label=traefik-public"
-        # This public Traefik will only use services with this label
-        # That way you can add other internal Traefik instances per stack if needed
-        - traefik.constraint-label=traefik-public
-        # admin-auth middleware with HTTP Basic auth
-        # Using the environment variables USERNAME and HASHED_PASSWORD
-        - traefik.http.middlewares.admin-auth.basicauth.users=${USERNAME?Variable not set}:${HASHED_PASSWORD?Variable not set}
-        # https-redirect middleware to redirect HTTP to HTTPS
-        # It can be re-used by other stacks in other Docker Compose files
-        - traefik.http.middlewares.https-redirect.redirectscheme.scheme=https
-        - traefik.http.middlewares.https-redirect.redirectscheme.permanent=true
-        # traefik-http set up only to use the middleware to redirect to https
-        # Uses the environment variable DOMAIN
-        - traefik.http.routers.traefik-public-http.rule=Host(`${DOMAIN?Variable not set}`)
-        - traefik.http.routers.traefik-public-http.entrypoints=http
-        - traefik.http.routers.traefik-public-http.middlewares=https-redirect
-        # traefik-https the actual router using HTTPS
-        # Uses the environment variable DOMAIN
-        - traefik.http.routers.traefik-public-https.rule=Host(`${DOMAIN?Variable not set}`)
-        - traefik.http.routers.traefik-public-https.entrypoints=https
-        - traefik.http.routers.traefik-public-https.tls=true
-        # Use the special Traefik service api@internal with the web UI/Dashboard
-        - traefik.http.routers.traefik-public-https.service=api@internal
-        # Use the "le" (Let's Encrypt) resolver created below
-        - traefik.http.routers.traefik-public-https.tls.certresolver=le
-        # Enable HTTP Basic auth, using the middleware created above
-        - traefik.http.routers.traefik-public-https.middlewares=admin-auth
-        # Define the port inside of the Docker service to use
-        - traefik.http.services.traefik-public.loadbalancer.server.port=8080
+    labels:
+      # Enable Traefik for this service, to make it available in the public network
+      - traefik.enable=true
+      # Use the traefik-public network (declared below)
+      - traefik.docker.network=traefik-public
+      # Use the custom label "traefik.constraint-label=traefik-public"
+      # This public Traefik will only use services with this label
+      # That way you can add other internal Traefik instances per stack if needed
+      - traefik.constraint-label=traefik-public
+      # admin-auth middleware with HTTP Basic auth
+      # Using the environment variables BASIC
+      - traefik.http.middlewares.admin-auth.basicauth.users=${BASIC?Variable not set}
+      # https-redirect middleware to redirect HTTP to HTTPS
+      # It can be re-used by other stacks in other Docker Compose files
+      - traefik.http.middlewares.https-redirect.redirectscheme.scheme=https
+      - traefik.http.middlewares.https-redirect.redirectscheme.permanent=true
+      # traefik-http set up only to use the middleware to redirect to https
+      # Uses the environment variable DOMAIN
+      - traefik.http.routers.traefik-public-http.rule=Host(`${DOMAIN?Variable not set}`)
+      - traefik.http.routers.traefik-public-http.entrypoints=http
+      - traefik.http.routers.traefik-public-http.middlewares=https-redirect
+      # traefik-https the actual router using HTTPS
+      # Uses the environment variable DOMAIN
+      - traefik.http.routers.traefik-public-https.rule=Host(`${DOMAIN?Variable not set}`)
+      - traefik.http.routers.traefik-public-https.entrypoints=https
+      - traefik.http.routers.traefik-public-https.tls=true
+      # Use the special Traefik service api@internal with the web UI/Dashboard
+      - traefik.http.routers.traefik-public-https.service=api@internal
+      # Use the "le" (Let's Encrypt) resolver created below
+      - traefik.http.routers.traefik-public-https.tls.certresolver=le
+      # Enable HTTP Basic auth, using the middleware created above
+      - traefik.http.routers.traefik-public-https.middlewares=admin-auth
+      # Define the port inside of the Docker service to use
+      - traefik.http.services.traefik-public.loadbalancer.server.port=8080
     volumes:
       # Add Docker as a mounted volume, so that Traefik can read the labels of other services
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -70,10 +70,12 @@ services:
       - --providers.docker.constraints=Label(`traefik.constraint-label`, `traefik-public`)
       # Do not expose all Docker services, only the ones explicitly exposed
       - --providers.docker.exposedbydefault=false
-      # Enable Docker Swarm mode
-      - --providers.swarm.endpoint=unix:///var/run/docker.sock
-      # Only expose containers with label traefik.enable=true
-      - --providers.swarm.exposedByDefault=false
+      # Name of the internal network
+      - --providers.docker.network=traefik-public
+      # API & Dashboard
+      - --api.dashboard=true
+      # Only for debugging
+      - --api.insecure=false
       # Create an entrypoint "http" listening on port 80
       - --entrypoints.http.address=:80
       # Create an entrypoint "https" listening on port 443
@@ -88,8 +90,6 @@ services:
       - --accesslog
       # Enable the Traefik log, for configurations and errors
       - --log
-      # Enable the Dashboard and API
-      - --api
     networks:
       # Use the public network created to be shared between Traefik and
       # any other service that needs to be publicly available with HTTPS
